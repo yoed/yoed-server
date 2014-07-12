@@ -50,13 +50,18 @@ func main() {
 		panic(fmt.Sprintf("failed loading config: %s", err))
 	}
 
-	handlers := make(map[string]bool, 0)
+	handlers := make(map[string]map[string]bool, 0)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		handle := r.FormValue("handle")
 		callbackUrl := r.FormValue("callback_url")
 		log.Printf("subscribe %s", callbackUrl)
-		handlers[callbackUrl] = true
+
+		if handlers[handle] == nil {
+			handlers[handle] = make(map[string]bool, 0)
+		}
+		handlers[handle][callbackUrl] = true
 	})
 	router.HandleFunc(`/yoed/{handle:[a-z0-9]+}`, func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -64,17 +69,17 @@ func main() {
 		username := r.FormValue("username")
 		log.Printf("got a YO from %s on %s", username, handle)
 
-		if 0 == len(handlers) {
-			log.Printf("No handler registered")
+		if 0 == len(handlers) || handlers[handle] == nil || 0 == len(handlers[handle]) {
+			log.Printf("No handler registered for handle %s", handle)
 		} else {
-			for handler, _ := range handlers {
+			for handler, _ := range handlers[handle] {
 				log.Printf("Dispatch to handler %s", handler)
 				resp, err := http.PostForm(handler, url.Values{"username":{username}})
 				
 				if err != nil {
 					log.Printf("Error while dispatching message to %s: %s", handler, err)
 					log.Printf("Remove handler %s", handler)
-					delete(handlers, handler)
+					delete(handlers[handle], handler)
 				} else {
 					log.Printf("Handler %s status: %s", handler, resp.Status)
 				}
