@@ -53,10 +53,17 @@ func main() {
 	handlers := make(map[string]map[string]bool, 0)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
 		handle := r.FormValue("handle")
 		callbackUrl := r.FormValue("callback_url")
-		log.Printf("subscribe %s", callbackUrl)
+		if handle == "" || callbackUrl == "" {
+			errorMsg := "Handle and callback_url are mandatory"
+			log.Printf("Error on subcribe: %s", errorMsg)
+			http.Error(w, errorMsg, 400)
+			return
+		}
+
+		log.Printf("Subscribe %s", callbackUrl)
 
 		if handlers[handle] == nil {
 			handlers[handle] = make(map[string]bool, 0)
