@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"github.com/gorilla/mux"
+	"strings"
 )
 
 type yoedConfig struct {
@@ -54,21 +55,23 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/yo", func(w http.ResponseWriter, r *http.Request) {
-		handle := r.FormValue("handle")
+		strHandles := r.FormValue("handles")
 		callbackUrl := r.FormValue("callback_url")
-		if handle == "" || callbackUrl == "" {
-			errorMsg := "Handle and callback_url are mandatory"
+		if strHandles == "" || callbackUrl == "" {
+			errorMsg := "Handles and callback_url are mandatory"
 			log.Printf("Error on subcribe: %s", errorMsg)
 			http.Error(w, errorMsg, 400)
 			return
 		}
 
-		log.Printf("Subscribe %s", callbackUrl)
-
-		if handlers[handle] == nil {
-			handlers[handle] = make(map[string]bool, 0)
+		handles := strings.Split(strHandles, ",")
+		for _, handle := range handles {
+			log.Printf("Subscribe %s: %s", handle, callbackUrl)
+			if handlers[handle] == nil {
+				handlers[handle] = make(map[string]bool, 0)
+			}
+			handlers[handle][callbackUrl] = true
 		}
-		handlers[handle][callbackUrl] = true
 	})
 	router.HandleFunc(`/yoed/{handle:[a-z0-9]+}`, func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
