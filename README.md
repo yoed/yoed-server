@@ -3,6 +3,12 @@ Yo'ed server
 
 Yo'ed server which handles incoming calls from Yo API.
 
+#Installation
+You need the go package on your machine to get the source
+
+`go get github.com/yoed/yoed-server`
+
+
 #Configuration
 
 Create a `config.json` file aside the executable program.
