@@ -8,16 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"github.com/gorilla/mux"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type yoedConfig struct {
-	Listen   string `json:"listen"`
-}
-
-type yoedHandler interface {
-	Handle(username string)
+	Listen string `json:"listen"`
 }
 
 func loadConfig(configPath string) (*yoedConfig, error) {
@@ -41,6 +38,20 @@ func loadConfig(configPath string) (*yoedConfig, error) {
 	}
 
 	return config, nil
+}
+
+func dispatch(handler, username string) {
+
+	resp, err := http.PostForm(handler, url.Values{
+		"username": {username},
+	})
+
+	if err != nil {
+		log.Printf("Error while dispatching message to %s: %s", handler, err)
+		log.Printf("Remove handler %s", handler)
+	} else {
+		log.Printf("Handler %s status: %s", handler, resp.Status)
+	}
 }
 
 func main() {
@@ -79,21 +90,14 @@ func main() {
 		username := r.FormValue("username")
 		log.Printf("got a YO from %s on %s", username, handle)
 
-		if 0 == len(handlers) || handlers[handle] == nil || 0 == len(handlers[handle]) {
+		if 0 == len(handlers) || nil == handlers[handle] || 0 == len(handlers[handle]) {
 			log.Printf("No handler registered for handle %s", handle)
-		} else {
-			for handler, _ := range handlers[handle] {
-				log.Printf("Dispatch to handler %s", handler)
-				resp, err := http.PostForm(handler, url.Values{"username":{username}})
-				
-				if err != nil {
-					log.Printf("Error while dispatching message to %s: %s", handler, err)
-					log.Printf("Remove handler %s", handler)
-					delete(handlers[handle], handler)
-				} else {
-					log.Printf("Handler %s status: %s", handler, resp.Status)
-				}
-			}
+			return
+		}
+
+		for handler, _ := range handlers[handle] {
+			log.Printf("Dispatching to handler %s", handler)
+			go dispatch(handler, username)
 		}
 	})
 
