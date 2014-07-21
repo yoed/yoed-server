@@ -40,10 +40,11 @@ func loadConfig(configPath string) (*yoedConfig, error) {
 	return config, nil
 }
 
-func dispatch(handler, username string) {
+func dispatch(handler, username, handle string) {
 
 	resp, err := http.PostForm(handler, url.Values{
 		"username": {username},
+		"handle": {handle},
 	})
 
 	if err != nil {
@@ -97,7 +98,7 @@ func main() {
 
 		for handler, _ := range handlers[handle] {
 			log.Printf("Dispatching to handler %s", handler)
-			go dispatch(handler, username)
+			go dispatch(handler, username, handle)
 		}
 	})
 
